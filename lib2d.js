@@ -576,9 +576,8 @@ export function limitNum(number, limit) {
 ///////////////////////////////////////////////
 //     Ab hier Implementierung für Vector !!!
 ///////////////////////////////////////////////
-class Vector {
+export class Vector {
   /**
-   * Creates Vector
    * @param {number} x 
    * @param {number} y 
    */
