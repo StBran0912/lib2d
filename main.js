@@ -6,7 +6,7 @@ import * as phys from './lib2d-phys.js';
 /** @type {(phys.Box|phys.Ball)[]} */
 let el = [];
 /* @type {function} */
-let checkKick = phys.createKicking(el);;
+let checkKick = phys.createKicking(el);
 
 // Initialisierung definieren
 function start() {    
