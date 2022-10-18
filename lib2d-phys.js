@@ -1,5 +1,28 @@
 import * as lb2d from './lib2d.js';
 
+/** Interface BallOrBox
+ * @typedef {Object} BallOrBox
+ * @property {string} typ
+ * @property {lb2d.Vector} location
+ * @property {lb2d.Vector[]=} vertices
+ * @property {lb2d.Vector} velocity
+ * @property {number} angVelocity
+ * @property {number=} radius
+ * @property {lb2d.Vector} accel
+ * @property {number} angAccel
+ * @property {number} mass
+ * @property {number} inertia
+ * @property {lb2d.Vector=} orientation
+ * @property {number} coefficient
+
+ * @property {() => void} display
+ * @property {(angle: number) => void} rotate
+ * @property {(force: lb2d.Vector, angForce: number) => void} applyForce
+ * @property {() => void} applyFriction
+ * @property {(v: lb2d.Vector) => void} resetPos
+ * @property {() => void} update
+ */
+
 export class Box {
     /**
      * @param {number} x 
@@ -8,6 +31,7 @@ export class Box {
      * @param {number} h 
      */
     constructor (x, y, w, h) {
+
         this.typ = "Box";
         /** @type {lb2d.Vector[]} */
         this.vertices = new Array(5);
@@ -102,7 +126,7 @@ export class Ball {
         this.mass = radius * 2;
         this.inertia = radius * radius * radius/2;
         this.orientation = new lb2d.Vector(radius + x, 0 + y);
-        this.coefficient = 0.0015;
+        this.coefficient = 0.0015;        
     }
     
     /** @type {() => void} */
@@ -155,7 +179,7 @@ export class Ball {
     }
 }
 
-/** @type {(a: Box, b: Box) => void} */
+/** @type {(a: BallOrBox, b: BallOrBox) => void} */
 function checkCollisionBoxes(a, b) {
     // Geprüft wird, ob eine Ecke von boxA in die Kante von boxB schneidet
     // Zusätzlich muss die Linie von Mittelpunkt boxA und Mittelpunkt boxB durch Kante von boxB gehen
@@ -235,7 +259,7 @@ function checkCollisionBoxes(a, b) {
 }
  
 
-/** @type {(a: Ball, b: Ball) => void} */
+/** @type {(a: BallOrBox, b: BallOrBox) => void} */
 function checkCollisionBalls(a, b) {
 //Distanz ermitteln
     let radiusTotal = a.radius + b.radius;
@@ -279,7 +303,7 @@ function checkCollisionBalls(a, b) {
     }
 }
 
-/** @type {(ball: Ball, box: Box) => void} */
+/** @type {(ball: BallOrBox, box: BallOrBox) => void} */
 function checkCollisionBallBoxes(ball, box) {
     for (let j = 0; j < 4; j++) {
         let e = lb2d.subVector(box.vertices[j+1], box.vertices[j]);
@@ -319,7 +343,7 @@ function checkCollisionBallBoxes(ball, box) {
     }
 }
 
-/** @type {(ball: Ball, box: Box, cp: lb2d.Vector, normal:lb2d.Vector) => void} */
+/** @type {(ball: BallOrBox, box: BallOrBox, cp: lb2d.Vector, normal:lb2d.Vector) => void} */
 function resolveCollisionBallBoxes(ball, box, cp, normal) {
     const rA = lb2d.multVector(normal, -ball.radius);
     const rA_perp = new lb2d.Vector(-rA.y, rA.x);
@@ -351,49 +375,60 @@ function resolveCollisionBallBoxes(ball, box, cp, normal) {
     }
 }
 
+/** 
+ * @param {BallOrBox[]} el
+ */
+export function checkCollision(el) {
+    for (let i = 0; i < el.length; i++) {    
+        for (let j = i+1; j < el.length; j++ ) {
+            //Shadow berechnen von Element i und Element j 
+            let shadow_i = createShadow(el[i]);
+            let shadow_j = createShadow(el[j]);
+            //Überschneidung prüfen
+            if (shadow_i.maxX >= shadow_j.minX && shadow_i.minX <= shadow_j.maxX && shadow_i.maxY >= shadow_j.minY && shadow_i.minY <= shadow_j.maxY) {  
+                //dann Überschneidung
+                // Testcode
+                lb2d.line(el[i].location.x, el[i].location.y, el[j].location.x, el[j].location.y)
+                // Ende Testcode
+    
+                if (el[i].typ == "Ball") {
+                    if (el[j].typ == "Ball") {
+                        checkCollisionBalls(el[i], el[j]);
+                    } else {
+                        checkCollisionBallBoxes(el[i],el[j]);
+                    }
+                }
+            
+                if (el[i].typ == "Box") {
+                    if (el[j].typ == "Box") {
+                        checkCollisionBoxes(el[i], el[j]);
+                    } else {
+                        checkCollisionBallBoxes(el[j], el[i]);
+                    }            
+                }
+            }
 
-/** @type {(a: Ball|Box, b: Ball|Box) => void} */
-export function checkCollision(a, b) {
-    if (a.typ == "Ball") {
-        if (b.typ == "Ball") {
-            // @ts-ignore
-            checkCollisionBalls(a, b);
-        } else {
-            // @ts-ignore
-            checkCollisionBallBoxes(a,b);
         }
     }
-
-    if (a.typ == "Box") {
-        if (b.typ == "Box") {
-            // @ts-ignore
-            checkCollisionBoxes(a, b);
-        } else {
-            // @ts-ignore
-            checkCollisionBallBoxes(b, a);
-        }
-        
-    }
-}  
+}
 
 /** 
- * @param {(Box|Ball)[]} el
- * @returns {Function}
+ * @returns {(el:BallOrBox[]) => void} function for checkKicking elements
 */
-export function createKicking(el) {
+export function createKicking() {
     /** @type {?number} */
     let index = null;
     let base = new lb2d.Vector(0, 0);
     
-    return function() {
+    return function(el) {
         if (lb2d.isMouseDown() && index == null) {
             el.forEach((element, idx) => {
                 if (element.location.dist(new lb2d.Vector(lb2d.mouseX, lb2d.mouseY)) < 15) {
                   base.set(element.location.x, element.location.y);
                   index = idx;
-                  return;
                 }
-            })    
+            })  
+            return;  
         }
     
         if (lb2d.isMouseDown() && index != null) {
@@ -409,4 +444,38 @@ export function createKicking(el) {
             return;
         }      
     }
+}
+
+/** 
+ * @param {BallOrBox} element
+*/
+function createShadow(element) {
+    /** @type {{minX:number, maxX:number, minY:number, maxY:number}} */
+    let shadow;
+    if (element.typ == "Ball") {
+        shadow = {minX:element.location.x - element.radius, maxX:element.location.x + element.radius, minY:element.location.y - element.radius, maxY:element.location.y + element.radius}
+    } else {
+        shadow = {minX:Infinity, maxX:-Infinity, minY:Infinity, maxY:-Infinity}
+        for (let i = 0; i < 4; i++) {
+            if (element.vertices[i].x < shadow.minX) {
+                shadow.minX = element.vertices[i].x;
+            } 
+            if (element.vertices[i].y < shadow.minY) {
+                shadow.minY = element.vertices[i].y;
+            } 
+            if (element.vertices[i].x > shadow.maxX) {
+                shadow.maxX = element.vertices[i].x;
+            } 
+            if (element.vertices[i].y > shadow.maxY) {
+                shadow.maxY = element.vertices[i].y;
+            } 
+        }    
+    }
+    
+    return shadow;
+    
+    
+    
+        
+
 }
