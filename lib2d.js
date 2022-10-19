@@ -6,6 +6,9 @@
 const canv = document.querySelector("canvas");
 const output = document.querySelector("#output");
 const ctx = canv.getContext("2d");
+export const color_r = 50
+export const color_g = 206
+export const color_b = 209
 export let mouseX = 0;
 export let mouseY = 0;
 let mouseStatus = 0;
@@ -18,8 +21,8 @@ let loop = true;
 export function init(w, h) {
   canv.width = w;
   canv.height = h;
-  ctx.strokeStyle = "RGB(0, 206, 209)";  
-  ctx.fillStyle = "RGB(0, 206, 209)";
+  ctx.strokeStyle = `RGB(${color_r},${color_g},${color_b})`;   
+  ctx.fillStyle = `RGB(${color_r},${color_g},${color_b})`;
   ctx.lineWidth = 1;
   ctx.save();
   canv.addEventListener("mousemove", updMousePos);
@@ -163,9 +166,9 @@ export function fillColor(...color) {
     g = color[0];
     b = color[0];
   } else {
-    r = color[0] || 0;
-    g = color[1] || 0;
-    b = color[2] || 0;
+    r = color[0] || color_r;
+    g = color[1] || color_g;
+    b = color[2] || color_b;
   }
 
   ctx.fillStyle = `RGB(${r},${g},${b})`;
@@ -194,9 +197,9 @@ export function strokeColor(...color) {
     g = color[0];
     b = color[0];
   } else {
-    r = color[0] || 0;
-    g = color[1] || 0;
-    b = color[2] || 0;
+    r = color[0] || color_r;
+    g = color[1] || color_g;
+    b = color[2] || color_b;
   }
 
   ctx.strokeStyle = `RGB(${r},${g},${b})`;
@@ -219,9 +222,9 @@ export function background(...color) {
     g = color[0];
     b = color[0];
   } else {
-    r = color[0] || 0;
-    g = color[1] || 0;
-    b = color[2] || 0;
+    r = color[0] || color_r;
+    g = color[1] || color_r;
+    b = color[2] || color_r;
   }
 
   push();

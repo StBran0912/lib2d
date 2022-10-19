@@ -74,7 +74,6 @@ export class Box {
 
     /** @type {() => void} */
     display() {
-        lb2d.strokeWidth(2);
         lb2d.shape(this.vertices[0].x, this.vertices[0].y, this.vertices[1].x, this.vertices[1].y, this.vertices[2].x, this.vertices[2].y, this.vertices[3].x, this.vertices[3].y, 0);
         lb2d.circle(this.location.x, this.location.y, 2, 0);
     }
@@ -131,7 +130,6 @@ export class Ball {
     
     /** @type {() => void} */
     display() {
-        lb2d.strokeWidth(2);
         lb2d.circle(this.location.x, this.location.y, this.radius, 0);
         lb2d.line(this.location.x, this.location.y, this.orientation.x, this.orientation.y);
     }
