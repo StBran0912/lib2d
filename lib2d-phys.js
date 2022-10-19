@@ -4,15 +4,15 @@ import * as lb2d from './lib2d.js';
  * @typedef {Object} Shape
  * @property {string} typ
  * @property {lb2d.Vector} location
- * @property {lb2d.Vector[]=} vertices
+ * @property {lb2d.Vector[]} [vertices]
  * @property {lb2d.Vector} velocity
  * @property {number} angVelocity
- * @property {number=} radius
+ * @property {number} [radius]
  * @property {lb2d.Vector} accel
  * @property {number} angAccel
  * @property {number} mass
  * @property {number} inertia
- * @property {lb2d.Vector=} orientation
+ * @property {lb2d.Vector} [orientation]
  * @property {number} coefficient
 
  * @property {() => void} display

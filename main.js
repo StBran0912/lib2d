@@ -1,4 +1,3 @@
-// @ts-check
 import * as lb2d from './lib2d.js';
 import * as phys from './lib2d-phys.js';
 
