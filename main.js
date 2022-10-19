@@ -3,21 +3,20 @@ import * as lb2d from './lib2d.js';
 import * as phys from './lib2d-phys.js';
 
 // Öffentliche Variablen definieren
-/** @type {phys.BallOrBox[]} */
-let el = [];
 
-/* @type {function} */
-let checkKicking = phys.createKicking();
+let /**@type {phys.Shape[]}*/ el;
+let /**@type {function}*/ checkKicking;
 
-// Initialisierung definieren
+// Initialisierung 
 function start() {    
+    el = [];
+    checkKicking = phys.createKicking();
     el.push(new phys.Box(200, 100, 110, 70));
     el.push(new phys.Box(400, 100, 70, 30));
     el.push(new phys.Box(600, 100, 60, 40));
     el.push(new phys.Ball(300, 250, 60));
     el.push(new phys.Ball(600, 250, 20));
     el[0].rotate(0.4);
-    phys.checkCollision(el);
     lb2d.init(800, 500);
     lb2d.startAnimation(draw);    
 }

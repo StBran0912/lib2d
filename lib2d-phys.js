@@ -1,7 +1,7 @@
 import * as lb2d from './lib2d.js';
 
-/** Interface BallOrBox
- * @typedef {Object} BallOrBox
+/** Interface Shape
+ * @typedef {Object} Shape
  * @property {string} typ
  * @property {lb2d.Vector} location
  * @property {lb2d.Vector[]=} vertices
@@ -179,7 +179,7 @@ export class Ball {
     }
 }
 
-/** @type {(a: BallOrBox, b: BallOrBox) => void} */
+/** @type {(a: Shape, b: Shape) => void} */
 function checkCollisionBoxes(a, b) {
     // Geprüft wird, ob eine Ecke von boxA in die Kante von boxB schneidet
     // Zusätzlich muss die Linie von Mittelpunkt boxA und Mittelpunkt boxB durch Kante von boxB gehen
@@ -259,7 +259,7 @@ function checkCollisionBoxes(a, b) {
 }
  
 
-/** @type {(a: BallOrBox, b: BallOrBox) => void} */
+/** @type {(a: Shape, b: Shape) => void} */
 function checkCollisionBalls(a, b) {
 //Distanz ermitteln
     let radiusTotal = a.radius + b.radius;
@@ -303,7 +303,7 @@ function checkCollisionBalls(a, b) {
     }
 }
 
-/** @type {(ball: BallOrBox, box: BallOrBox) => void} */
+/** @type {(ball: Shape, box: Shape) => void} */
 function checkCollisionBallBoxes(ball, box) {
     for (let j = 0; j < 4; j++) {
         let e = lb2d.subVector(box.vertices[j+1], box.vertices[j]);
@@ -343,7 +343,7 @@ function checkCollisionBallBoxes(ball, box) {
     }
 }
 
-/** @type {(ball: BallOrBox, box: BallOrBox, cp: lb2d.Vector, normal:lb2d.Vector) => void} */
+/** @type {(ball: Shape, box: Shape, cp: lb2d.Vector, normal:lb2d.Vector) => void} */
 function resolveCollisionBallBoxes(ball, box, cp, normal) {
     const rA = lb2d.multVector(normal, -ball.radius);
     const rA_perp = new lb2d.Vector(-rA.y, rA.x);
@@ -376,7 +376,7 @@ function resolveCollisionBallBoxes(ball, box, cp, normal) {
 }
 
 /** 
- * @param {BallOrBox[]} el
+ * @param {Shape[]} el
  */
 export function checkCollision(el) {
     for (let i = 0; i < el.length; i++) {    
@@ -413,7 +413,7 @@ export function checkCollision(el) {
 }
 
 /** 
- * @returns {(el:BallOrBox[]) => void} function for checkKicking elements
+ * @returns {(el:Shape[]) => void} function for checkKicking elements
 */
 export function createKicking() {
     /** @type {?number} */
@@ -447,7 +447,7 @@ export function createKicking() {
 }
 
 /** 
- * @param {BallOrBox} element
+ * @param {Shape} element
 */
 function createShadow(element) {
     /** @type {{minX:number, maxX:number, minY:number, maxY:number}} */
