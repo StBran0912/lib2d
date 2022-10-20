@@ -88,11 +88,13 @@ export class Box {
 
     /** @type {(v: lb2d.Vector) => void} */
     resetPos(v) {
-        this.location.add(v);
-        this.vertices[0].add(v);
-        this.vertices[1].add(v);
-        this.vertices[2].add(v);
-        this.vertices[3].add(v);
+        if (this.mass != Infinity) {
+            this.location.add(v);
+            this.vertices[0].add(v);
+            this.vertices[1].add(v);
+            this.vertices[2].add(v);
+            this.vertices[3].add(v);    
+        }
     }
 }
 

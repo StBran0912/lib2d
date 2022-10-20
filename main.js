@@ -11,10 +11,10 @@ let lifespan = 0;
 function start() {    
     el = [];
     checkKicking = phys.createKicking();
-    el.push(new phys.Box(20, 400, 700, 10));
-    el.push(new phys.Box(300, 100, 70, 30));
+    el.push(new phys.Box(20, 400, 750, 10));
+    el.push(new phys.Box(100, 100, 70, 30));
     el.push(new phys.Box(600, 100, 60, 40));
-    el.push(new phys.Ball(300, 250, 60));
+    el.push(new phys.Ball(300, 250, 50));
     el.push(new phys.Ball(600, 250, 20));
     el[0].rotate(0.1);
     el[0].mass = Infinity;
