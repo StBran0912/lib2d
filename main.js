@@ -11,12 +11,14 @@ let lifespan = 0;
 function start() {    
     el = [];
     checkKicking = phys.createKicking();
-    el.push(new phys.Box(200, 100, 110, 70));
-    el.push(new phys.Box(400, 100, 70, 30));
+    el.push(new phys.Box(20, 400, 700, 10));
+    el.push(new phys.Box(300, 100, 70, 30));
     el.push(new phys.Box(600, 100, 60, 40));
     el.push(new phys.Ball(300, 250, 60));
     el.push(new phys.Ball(600, 250, 20));
-    el[0].rotate(0.4);
+    el[0].rotate(0.1);
+    el[0].mass = Infinity;
+    el[0].inertia = Infinity;
  
     lb2d.init(800, 500);
     lb2d.strokeWidth(1.5);
@@ -36,11 +38,9 @@ function draw() {
     */  
     checkKicking(el);
     phys.checkCollision(el);
-    for (let i = 0; i < el.length; i++) {
-        el[i].applyFriction()
-        el[i].update();
-        el[i].display();  
-    }
+    phys.applyGravity(el);
+    phys.applyFriction(el);
+    phys.update(el);
     
 }
 

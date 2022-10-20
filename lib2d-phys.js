@@ -13,15 +13,18 @@ import * as lb2d from './lib2d.js';
  * @property {number} mass
  * @property {number} inertia
  * @property {lb2d.Vector} [orientation]
- * @property {number} coefficient
 
  * @property {() => void} display
  * @property {(angle: number) => void} rotate
  * @property {(force: lb2d.Vector, angForce: number) => void} applyForce
- * @property {() => void} applyFriction
  * @property {(v: lb2d.Vector) => void} resetPos
  * @property {() => void} update
  */
+
+// Konstanten
+const COEFFICIENT = 0.0005                      //Reibungskoeffizient
+const GRAVITY = new lb2d.Vector(0, 0.1);        //Gravitation
+
 
 export class Box {
     /**
@@ -45,9 +48,8 @@ export class Box {
         this.angVelocity = 0;
         this.accel = new lb2d.Vector(0, 0);
         this.angAccel = 0;
-        this.mass = (w + h)*2,
-        this.inertia = w * h * w,
-        this.coefficient = 0.0005
+        this.mass = (w + h)*2;
+        this.inertia = w * h * w;
     }
 
     /** @type {(angle: number) => void} */
@@ -84,20 +86,6 @@ export class Box {
         this.angAccel += angForce / this.mass; 
     }
 
-    /** @type {() => void} */
-    applyFriction() {
-        let frictVelocity = this.velocity.copy();
-        frictVelocity.normalize();
-        frictVelocity.mult(this.coefficient * -1); // in Gegenrichtung
-        frictVelocity.limit(this.velocity.mag());
-        this.accel.add(frictVelocity);
-
-        const frictAngDirection = this.angVelocity < 0 ? 1 : -1; // in Gegenrichtung
-        const frictAngVelocity = lb2d.limitNum(this.coefficient * 0.05 * frictAngDirection, Math.abs(this.angVelocity));
-        this.angAccel += frictAngVelocity;
-    }
-
-
     /** @type {(v: lb2d.Vector) => void} */
     resetPos(v) {
         this.location.add(v);
@@ -124,8 +112,7 @@ export class Ball {
         this.angAccel = 0;
         this.mass = radius * 2;
         this.inertia = radius * radius * radius/2;
-        this.orientation = new lb2d.Vector(radius + x, 0 + y);
-        this.coefficient = 0.0015;        
+        this.orientation = new lb2d.Vector(radius + x, 0 + y);     
     }
     
     /** @type {() => void} */
@@ -143,19 +130,6 @@ export class Ball {
     applyForce(force, angForce) {
         this.accel.add(lb2d.divVector(force, this.mass));
         this.angAccel += angForce / this.mass; 
-    }
-
-    /** @type {() => void} */
-    applyFriction() {
-        let frictVelocity = this.velocity.copy();
-        frictVelocity.normalize();
-        frictVelocity.mult(this.coefficient * -1); // in Gegenrichtung
-        frictVelocity.limit(this.velocity.mag());
-        this.accel.add(frictVelocity);
-
-        const frictAngDirection = this.angVelocity < 0 ? 1 : -1; // in Gegenrichtung
-        const frictAngVelocity = lb2d.limitNum(this.coefficient * 0.05 * frictAngDirection, Math.abs(this.angVelocity));
-        this.angAccel += frictAngVelocity;
     }
     
     /** @type {(v: lb2d.Vector) => void} */
@@ -420,9 +394,9 @@ export function createKicking() {
     
     return function(el) {
         if (lb2d.isMouseDown() && index == null) {
-            el.forEach((element, idx) => {
-                if (element.location.dist(new lb2d.Vector(lb2d.mouseX, lb2d.mouseY)) < 15) {
-                  base.set(element.location.x, element.location.y);
+            el.forEach((value, idx) => {
+                if (value.location.dist(new lb2d.Vector(lb2d.mouseX, lb2d.mouseY)) < 15) {
+                  base.set(value.location.x, value.location.y);
                   index = idx;
                 }
             })  
@@ -445,27 +419,27 @@ export function createKicking() {
 }
 
 /** 
- * @param {Shape} element
+ * @param {Shape} el
 */
-function createShadow(element) {
+function createShadow(el) {
     /** @type {{minX:number, maxX:number, minY:number, maxY:number}} */
     let shadow;
-    if (element.typ == "Ball") {
-        shadow = {minX:element.location.x - element.radius, maxX:element.location.x + element.radius, minY:element.location.y - element.radius, maxY:element.location.y + element.radius}
+    if (el.typ == "Ball") {
+        shadow = {minX:el.location.x - el.radius, maxX:el.location.x + el.radius, minY:el.location.y - el.radius, maxY:el.location.y + el.radius}
     } else {
         shadow = {minX:Infinity, maxX:-Infinity, minY:Infinity, maxY:-Infinity}
         for (let i = 0; i < 4; i++) {
-            if (element.vertices[i].x < shadow.minX) {
-                shadow.minX = element.vertices[i].x;
+            if (el.vertices[i].x < shadow.minX) {
+                shadow.minX = el.vertices[i].x;
             } 
-            if (element.vertices[i].y < shadow.minY) {
-                shadow.minY = element.vertices[i].y;
+            if (el.vertices[i].y < shadow.minY) {
+                shadow.minY = el.vertices[i].y;
             } 
-            if (element.vertices[i].x > shadow.maxX) {
-                shadow.maxX = element.vertices[i].x;
+            if (el.vertices[i].x > shadow.maxX) {
+                shadow.maxX = el.vertices[i].x;
             } 
-            if (element.vertices[i].y > shadow.maxY) {
-                shadow.maxY = element.vertices[i].y;
+            if (el.vertices[i].y > shadow.maxY) {
+                shadow.maxY = el.vertices[i].y;
             } 
         }    
     }
@@ -476,4 +450,42 @@ function createShadow(element) {
     
         
 
+}
+
+/** 
+ * @param {Shape[]} el
+ */
+ export function applyFriction(el) {
+    el.forEach(value => {
+        let frictVelocity = value.velocity.copy();
+        frictVelocity.normalize();
+        frictVelocity.mult(COEFFICIENT * -1); // in Gegenrichtung
+        frictVelocity.limit(value.velocity.mag());
+        value.accel.add(frictVelocity);
+
+        const frictAngDirection = value.angVelocity < 0 ? 1 : -1; // in Gegenrichtung
+        const frictAngVelocity = lb2d.limitNum(COEFFICIENT * 0.05 * frictAngDirection, Math.abs(value.angVelocity));
+        value.angAccel += frictAngVelocity;
+    });
+}
+
+/** 
+ * @param {Shape[]} el
+ */
+export function applyGravity(el) {
+    el.forEach(value => {
+        if (value.mass != Infinity) {
+            value.applyForce(lb2d.multVector(GRAVITY, value.mass), 0);
+        }
+    });
+}
+
+/** 
+ * @param {Shape[]} el
+ */
+export function update(el) {
+    el.forEach(value => {
+        value.update();
+        value.display();
+    });
 }
