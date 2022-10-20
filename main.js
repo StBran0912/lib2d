@@ -11,7 +11,7 @@ let lifespan = 0;
 function start() {    
     el = [];
     checkKicking = phys.createKicking();
-    el.push(new phys.Box(20, 400, 750, 10));
+    el.push(new phys.Box(20, 400, 750, 30));
     el.push(new phys.Box(100, 100, 70, 30));
     el.push(new phys.Box(600, 100, 60, 40));
     el.push(new phys.Ball(300, 250, 50));

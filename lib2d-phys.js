@@ -23,7 +23,7 @@ import * as lb2d from './lib2d.js';
 
 // Konstanten
 const COEFFICIENT = 0.0005                      //Reibungskoeffizient
-const GRAVITY = new lb2d.Vector(0, 0.1);        //Gravitation
+const GRAVITY = new lb2d.Vector(0, 0.05);       //Gravitation
 
 
 export class Box {
