@@ -3,22 +3,22 @@ import * as phys from './lib2d-phys.js';
 
 // Öffentliche Variablen definieren
 
-let /**@type {phys.Shape[]}*/ el;
+let /**@type {phys.Shape[]}*/ shapes;
 let /**@type {function}*/ checkKicking;
 let lifespan = 0; 
 
 // Initialisierung 
 function start() {    
-    el = [];
+    shapes = [];
     checkKicking = phys.createKicking();
-    el.push(new phys.Box(20, 400, 750, 30));
-    el.push(new phys.Box(100, 100, 70, 30));
-    el.push(new phys.Box(600, 100, 60, 40));
-    el.push(new phys.Ball(300, 250, 50));
-    el.push(new phys.Ball(600, 250, 20));
-    el[0].rotate(0.1);
-    el[0].mass = Infinity;
-    el[0].inertia = Infinity;
+    shapes.push(new phys.Box(20, 400, 750, 30));
+    shapes.push(new phys.Box(100, 100, 70, 30));
+    shapes.push(new phys.Box(600, 100, 60, 40));
+    shapes.push(new phys.Ball(300, 250, 50));
+    shapes.push(new phys.Ball(600, 250, 20));
+    shapes[0].rotate(0.1);
+    shapes[0].mass = Infinity;
+    shapes[0].inertia = Infinity;
  
     lb2d.init(800, 500);
     lb2d.strokeWidth(1.5);
@@ -36,11 +36,11 @@ function draw() {
     lb2d.strokeColor(lb2d.color_r, g, b);
     lifespan -= 0.5;
     */  
-    checkKicking(el);
-    phys.checkCollision(el);
-    phys.applyGravity(el);
-    phys.applyFriction(el);
-    phys.update(el);
+    checkKicking(shapes);
+    phys.checkCollision(shapes);
+    phys.applyGravity(shapes);
+    phys.applyFriction(shapes);
+    phys.update(shapes);
     
 }
 

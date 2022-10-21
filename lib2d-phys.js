@@ -350,34 +350,34 @@ function resolveCollisionBallBoxes(ball, box, cp, normal) {
 }
 
 /** 
- * @param {Shape[]} el
+ * @param {Shape[]} shapes
  */
-export function checkCollision(el) {
-    for (let i = 0; i < el.length; i++) {    
-        for (let j = i+1; j < el.length; j++ ) {
+export function checkCollision(shapes) {
+    for (let i = 0; i < shapes.length; i++) {    
+        for (let j = i+1; j < shapes.length; j++ ) {
             //Shadow berechnen von Element i und Element j 
-            let shadow_i = createShadow(el[i]);
-            let shadow_j = createShadow(el[j]);
+            let shadow_i = createShadow(shapes[i]);
+            let shadow_j = createShadow(shapes[j]);
             //Überschneidung prüfen
             if (shadow_i.maxX >= shadow_j.minX && shadow_i.minX <= shadow_j.maxX && shadow_i.maxY >= shadow_j.minY && shadow_i.minY <= shadow_j.maxY) {  
                 //dann Überschneidung
                 // Testcode
-                lb2d.line(el[i].location.x, el[i].location.y, el[j].location.x, el[j].location.y)
+                lb2d.line(shapes[i].location.x, shapes[i].location.y, shapes[j].location.x, shapes[j].location.y)
                 // Ende Testcode
     
-                if (el[i].typ == "Ball") {
-                    if (el[j].typ == "Ball") {
-                        checkCollisionBalls(el[i], el[j]);
+                if (shapes[i].typ == "Ball") {
+                    if (shapes[j].typ == "Ball") {
+                        checkCollisionBalls(shapes[i], shapes[j]);
                     } else {
-                        checkCollisionBallBoxes(el[i],el[j]);
+                        checkCollisionBallBoxes(shapes[i],shapes[j]);
                     }
                 }
             
-                if (el[i].typ == "Box") {
-                    if (el[j].typ == "Box") {
-                        checkCollisionBoxes(el[i], el[j]);
+                if (shapes[i].typ == "Box") {
+                    if (shapes[j].typ == "Box") {
+                        checkCollisionBoxes(shapes[i], shapes[j]);
                     } else {
-                        checkCollisionBallBoxes(el[j], el[i]);
+                        checkCollisionBallBoxes(shapes[j], shapes[i]);
                     }            
                 }
             }
@@ -387,18 +387,18 @@ export function checkCollision(el) {
 }
 
 /** 
- * @returns {(el:Shape[]) => void} function for checkKicking elements
+ * @returns {(shapes: Shape[]) => void} function for checkKicking elements
 */
 export function createKicking() {
     /** @type {?number} */
     let index = null;
     let base = new lb2d.Vector(0, 0);
     
-    return function(el) {
+    return function(shapes) {
         if (lb2d.isMouseDown() && index == null) {
-            el.forEach((value, idx) => {
-                if (value.location.dist(new lb2d.Vector(lb2d.mouseX, lb2d.mouseY)) < 15) {
-                  base.set(value.location.x, value.location.y);
+            shapes.forEach((element, idx) => {
+                if (element.location.dist(new lb2d.Vector(lb2d.mouseX, lb2d.mouseY)) < 15) {
+                  base.set(element.location.x, element.location.y);
                   index = idx;
                 }
             })  
@@ -412,8 +412,8 @@ export function createKicking() {
     
         if (lb2d.isMouseUp() && index != null) {
             let mouse = new lb2d.Vector(lb2d.mouseX, lb2d.mouseY);
-            let force = lb2d.subVector(mouse, el[index].location);
-            el[index].applyForce(force, 0);
+            let force = lb2d.subVector(mouse, shapes[index].location);
+            shapes[index].applyForce(force, 0);
             index = null;
             return;
         }      
@@ -421,27 +421,27 @@ export function createKicking() {
 }
 
 /** 
- * @param {Shape} el
+ * @param {Shape} shape
 */
-function createShadow(el) {
+function createShadow(shape) {
     /** @type {{minX:number, maxX:number, minY:number, maxY:number}} */
     let shadow;
-    if (el.typ == "Ball") {
-        shadow = {minX:el.location.x - el.radius, maxX:el.location.x + el.radius, minY:el.location.y - el.radius, maxY:el.location.y + el.radius}
+    if (shape.typ == "Ball") {
+        shadow = {minX:shape.location.x - shape.radius, maxX:shape.location.x + shape.radius, minY:shape.location.y - shape.radius, maxY:shape.location.y + shape.radius}
     } else {
         shadow = {minX:Infinity, maxX:-Infinity, minY:Infinity, maxY:-Infinity}
         for (let i = 0; i < 4; i++) {
-            if (el.vertices[i].x < shadow.minX) {
-                shadow.minX = el.vertices[i].x;
+            if (shape.vertices[i].x < shadow.minX) {
+                shadow.minX = shape.vertices[i].x;
             } 
-            if (el.vertices[i].y < shadow.minY) {
-                shadow.minY = el.vertices[i].y;
+            if (shape.vertices[i].y < shadow.minY) {
+                shadow.minY = shape.vertices[i].y;
             } 
-            if (el.vertices[i].x > shadow.maxX) {
-                shadow.maxX = el.vertices[i].x;
+            if (shape.vertices[i].x > shadow.maxX) {
+                shadow.maxX = shape.vertices[i].x;
             } 
-            if (el.vertices[i].y > shadow.maxY) {
-                shadow.maxY = el.vertices[i].y;
+            if (shape.vertices[i].y > shadow.maxY) {
+                shadow.maxY = shape.vertices[i].y;
             } 
         }    
     }
@@ -455,39 +455,39 @@ function createShadow(el) {
 }
 
 /** 
- * @param {Shape[]} el
+ * @param {Shape[]} shapes
  */
- export function applyFriction(el) {
-    el.forEach(value => {
-        let frictVelocity = value.velocity.copy();
+ export function applyFriction(shapes) {
+    shapes.forEach(element => {
+        let frictVelocity = element.velocity.copy();
         frictVelocity.normalize();
         frictVelocity.mult(COEFFICIENT * -1); // in Gegenrichtung
-        frictVelocity.limit(value.velocity.mag());
-        value.accel.add(frictVelocity);
+        frictVelocity.limit(element.velocity.mag());
+        element.accel.add(frictVelocity);
 
-        const frictAngDirection = value.angVelocity < 0 ? 1 : -1; // in Gegenrichtung
-        const frictAngVelocity = lb2d.limitNum(COEFFICIENT * 0.05 * frictAngDirection, Math.abs(value.angVelocity));
-        value.angAccel += frictAngVelocity;
+        const frictAngDirection = element.angVelocity < 0 ? 1 : -1; // in Gegenrichtung
+        const frictAngVelocity = lb2d.limitNum(COEFFICIENT * 0.05 * frictAngDirection, Math.abs(element.angVelocity));
+        element.angAccel += frictAngVelocity;
     });
 }
 
 /** 
- * @param {Shape[]} el
+ * @param {Shape[]} shapes
  */
-export function applyGravity(el) {
-    el.forEach(value => {
-        if (value.mass != Infinity) {
-            value.applyForce(lb2d.multVector(GRAVITY, value.mass), 0);
+export function applyGravity(shapes) {
+    shapes.forEach(element => {
+        if (element.mass != Infinity) {
+            element.applyForce(lb2d.multVector(GRAVITY, element.mass), 0);
         }
     });
 }
 
 /** 
- * @param {Shape[]} el
+ * @param {Shape[]} shapes
  */
-export function update(el) {
-    el.forEach(value => {
-        value.update();
-        value.display();
+export function update(shapes) {
+    shapes.forEach(element => {
+        element.update();
+        element.display();
     });
 }
