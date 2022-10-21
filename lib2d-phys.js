@@ -22,7 +22,7 @@ import * as lb2d from './lib2d.js';
  */
 
 // Konstanten
-const COEFFICIENT = 0.0005                      //Reibungskoeffizient
+const COEFFICIENT = 0.0015                      //Reibungskoeffizient
 const GRAVITY = new lb2d.Vector(0, 0.05);       //Gravitation
 
 
@@ -62,8 +62,10 @@ export class Box {
     /** @type {() => void} */
     update() {
         this.velocity.add(this.accel);
+        this.velocity.limit(10);
         this.accel.set(0,0);
         this.angVelocity += this.angAccel;
+        this.angVelocity = lb2d.limitNum(this.angVelocity, 0.05);
         this.angAccel = 0;
 
         this.location.add(this.velocity);
@@ -143,8 +145,10 @@ export class Ball {
     /** @type {() => void} */
     update() {
         this.velocity.add(this.accel);
+        this.velocity.limit(10);
         this.accel.set(0,0);
         this.angVelocity += this.angAccel;
+        this.angVelocity = lb2d.limitNum(this.angVelocity, 0.05);
         this.angAccel = 0;
 
         this.location.add(this.velocity);
