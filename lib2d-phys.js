@@ -22,7 +22,7 @@ import * as lb2d from './lib2d.js';
  */
 
 // Konstanten
-const COEFFICIENT = 0.0015                      //Reibungskoeffizient
+const COEFFICIENT = 0.005;                      //Reibungskoeffizient
 const GRAVITY = new lb2d.Vector(0, 0.05);       //Gravitation
 
 
@@ -273,8 +273,8 @@ function checkCollisionBalls(a, b) {
             t.mult(t_scalarprodukt);
             t.normalize();
             //apply Force
-            a.accel.add(lb2d.addVector(lb2d.multVector(collisionLine, (j/a.mass)), lb2d.multVector(t, (0.2*-j/a.mass))));
-            b.accel.add(lb2d.addVector(lb2d.multVector(collisionLine, (-j/b.mass)), lb2d.multVector(t, (0.2*j/b.mass))))
+            a.accel.add(lb2d.addVector(lb2d.multVector(collisionLine, (0.8*j/a.mass)), lb2d.multVector(t, (0.2*-j/a.mass))));
+            b.accel.add(lb2d.addVector(lb2d.multVector(collisionLine, (0.8*-j/b.mass)), lb2d.multVector(t, (0.2*j/b.mass))))
             a.angAccel += lb2d.dotProduct(rA_perp, lb2d.multVector(t, 0.1*-j/a.inertia));
             b.angAccel += lb2d.dotProduct(rB_perp, lb2d.multVector(t, 0.1*j/b.inertia));
         }
@@ -346,7 +346,7 @@ function resolveCollisionBallBoxes(ball, box, cp, normal) {
         t.mult(t_scalarprodukt);
         t.normalize();
 
-        ball.accel.add(lb2d.addVector(lb2d.multVector(normal, (j/ball.mass)), lb2d.multVector(t, (0.05*-j/ball.mass))));
+        ball.accel.add(lb2d.addVector(lb2d.multVector(normal, (0.8*j/ball.mass)), lb2d.multVector(t, (0.05*-j/ball.mass))));
         box.accel.add(lb2d.addVector(lb2d.multVector(normal, (-j/box.mass)), lb2d.multVector(t, (0.05*j/box.mass))));
         ball.angAccel += lb2d.dotProduct(rA_perp, lb2d.multVector(t, 0.05*-j/ball.inertia));
         box.angAccel += lb2d.dotProduct(rBP_perp, lb2d.addVector(lb2d.multVector(normal, -j/box.inertia), lb2d.multVector(t, 0.05*j/box.inertia)));
@@ -463,15 +463,15 @@ function createShadow(shape) {
  */
  export function applyFriction(shapes) {
     shapes.forEach(element => {
-        let frictVelocity = element.velocity.copy();
-        frictVelocity.normalize();
-        frictVelocity.mult(COEFFICIENT * -1); // in Gegenrichtung
-        frictVelocity.limit(element.velocity.mag());
-        element.accel.add(frictVelocity);
+        let frictForce = element.velocity.copy();
+        frictForce.normalize();
+        frictForce.mult(COEFFICIENT * -1); // in Gegenrichtung
+        frictForce.limit(element.velocity.mag());
 
         const frictAngDirection = element.angVelocity < 0 ? 1 : -1; // in Gegenrichtung
-        const frictAngVelocity = lb2d.limitNum(COEFFICIENT * 0.05 * frictAngDirection, Math.abs(element.angVelocity));
-        element.angAccel += frictAngVelocity;
+        const frictAngForce = lb2d.limitNum(COEFFICIENT * 0.05 * frictAngDirection, Math.abs(element.angVelocity));
+
+        element.applyForce(frictForce, frictAngForce);
     });
 }
 
