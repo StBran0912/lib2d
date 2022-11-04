@@ -23,7 +23,7 @@ import * as lb2d from './lib2d.js';
 
 // Konstanten
 const COEFFICIENT = 0.005;                      //Reibungskoeffizient
-const GRAVITY = new lb2d.Vector(0, 0.05);       //Gravitation
+const GRAVITY = new lb2d.Vector(0, 0.025);       //Gravitation
 
 
 export class Box {
@@ -157,8 +157,11 @@ export class Ball {
     }
 }
 
-/** @type {(a: Shape, b: Shape) => void} */
-function checkCollisionBoxes(a, b) {
+/**
+ * @param {Shape} a 
+ * @param {Shape} b 
+ */
+function detectCollisionBox(a, b) {
     // Geprüft wird, ob eine Ecke von boxA in die Kante von boxB schneidet
     // Zusätzlich muss die Linie von Mittelpunkt boxA und Mittelpunkt boxB durch Kante von boxB gehen
     // i ist Index von Ecke und j ist Index von Kante
@@ -197,37 +200,8 @@ function checkCollisionBoxes(a, b) {
                         boxA.resetPos(lb2d.multVector(e_perp, 0.5));
                         boxB.resetPos(lb2d.multVector(e_perp, -0.5));
                         e_perp.normalize(); // normal_e
-                        // Collision berechnen
-                        // rAP = Linie von A.location zu Kollisionspunkt (Ecke i von BoxA)
-                        let rAP = lb2d.subVector(boxA.vertices[i], boxA.location);
-                        // rBP = Linie von B.location zu Kollisionspunkt (ebenfalls Ecke i von BoxA)
-                        let rBP = lb2d.subVector(boxA.vertices[i], boxB.location);
-                        let rAP_perp = new lb2d.Vector(-rAP.y, rAP.x);
-                        let rBP_perp = new lb2d.Vector(-rBP.y, rBP.x);
-                        let VtanA = lb2d.multVector(rAP_perp, boxA.angVelocity);
-                        let VtanB = lb2d.multVector(rBP_perp, boxB.angVelocity);
-                        let VgesamtA = lb2d.addVector(boxA.velocity, VtanA);
-                        let VgesamtB = lb2d.addVector(boxB.velocity, VtanB);
-                        const velocity_AB = lb2d.subVector(VgesamtA, VgesamtB);
-                        if (lb2d.dotProduct(velocity_AB, e_perp) < 0) { // wenn negativ, dann auf Kollisionskurs
-                            let e = 1; //inelastischer Stoß
-                            let j_denominator = lb2d.dotProduct(lb2d.multVector(velocity_AB, -(1+e)), e_perp);
-                            let j_divLinear = lb2d.dotProduct(e_perp, lb2d.multVector(e_perp, (1/boxA.mass + 1/boxB.mass)));
-                            let j_divAngular = Math.pow(lb2d.dotProduct(rAP_perp, e_perp), 2) / boxA.inertia + Math.pow(lb2d.dotProduct(rBP_perp, e_perp), 2) / boxB.inertia;
-                            let j = j_denominator / (j_divLinear + j_divAngular);
-                            // Grundlage für Friction berechnen (t)
-                            let t = new lb2d.Vector(-(e_perp.y), e_perp.x);
-                            let t_scalarprodukt = lb2d.dotProduct(velocity_AB, t);
-                            t.mult(t_scalarprodukt);
-                            t.normalize();
-                            
-                            //apply Force to acceleration
-                            boxA.accel.add(lb2d.addVector(lb2d.multVector(e_perp, (j/boxA.mass)), lb2d.multVector(t, (0.2*-j/boxA.mass))));
-                            boxB.accel.add(lb2d.addVector(lb2d.multVector(e_perp, (-j/boxB.mass)), lb2d.multVector(t, (0.2*j/boxB.mass))));
-                            boxA.angAccel += lb2d.dotProduct(rAP_perp, lb2d.addVector(lb2d.multVector(e_perp, j/boxA.inertia), lb2d.multVector(t, 0.2*-j/boxA.inertia)));
-                            boxB.angAccel += lb2d.dotProduct(rBP_perp, lb2d.addVector(lb2d.multVector(e_perp, -j/boxB.inertia), lb2d.multVector(t, 0.2*j/boxB.inertia)));
-                        }
-                    
+                        //Collision berechnen
+                        resolveCollisionBox(boxA, boxB, boxA.vertices[i], e_perp);
                         return; 
                     }
                 }
@@ -235,10 +209,51 @@ function checkCollisionBoxes(a, b) {
         }
     }
 }
- 
 
-/** @type {(a: Shape, b: Shape) => void} */
-function checkCollisionBalls(a, b) {
+/**
+ * @param {Shape} boxA 
+ * @param {Shape} boxB 
+ * @param {lb2d.Vector} cp Collisionpoint
+ * @param {lb2d.Vector} normal Normalvector to edge e
+ */
+function resolveCollisionBox(boxA, boxB, cp, normal) {
+    // rAP = Linie von A.location zu Kollisionspunkt (Ecke i von BoxA)
+    let rAP = lb2d.subVector(cp, boxA.location);
+    // rBP = Linie von B.location zu Kollisionspunkt (ebenfalls Ecke i von BoxA)
+    let rBP = lb2d.subVector(cp, boxB.location);
+    let rAP_perp = new lb2d.Vector(-rAP.y, rAP.x);
+    let rBP_perp = new lb2d.Vector(-rBP.y, rBP.x);
+    let VtanA = lb2d.multVector(rAP_perp, boxA.angVelocity);
+    let VtanB = lb2d.multVector(rBP_perp, boxB.angVelocity);
+    let VgesamtA = lb2d.addVector(boxA.velocity, VtanA);
+    let VgesamtB = lb2d.addVector(boxB.velocity, VtanB);
+    const velocity_AB = lb2d.subVector(VgesamtA, VgesamtB);
+    if (lb2d.dotProduct(velocity_AB, normal) < 0) { // wenn negativ, dann auf Kollisionskurs
+        let e = 1; //inelastischer Stoß
+        let j_denominator = lb2d.dotProduct(lb2d.multVector(velocity_AB, -(1+e)), normal);
+        let j_divLinear = lb2d.dotProduct(normal, lb2d.multVector(normal, (1/boxA.mass + 1/boxB.mass)));
+        let j_divAngular = Math.pow(lb2d.dotProduct(rAP_perp, normal), 2) / boxA.inertia + Math.pow(lb2d.dotProduct(rBP_perp, normal), 2) / boxB.inertia;
+        let j = j_denominator / (j_divLinear + j_divAngular);
+        // Grundlage für Friction berechnen (t)
+        let t = new lb2d.Vector(-(normal.y), normal.x);
+        let t_scalarprodukt = lb2d.dotProduct(velocity_AB, t);
+        t.mult(t_scalarprodukt);
+        t.normalize();
+        
+        //apply Force to acceleration
+        boxA.accel.add(lb2d.addVector(lb2d.multVector(normal, (j/boxA.mass)), lb2d.multVector(t, (0.2*-j/boxA.mass))));
+        boxB.accel.add(lb2d.addVector(lb2d.multVector(normal, (-j/boxB.mass)), lb2d.multVector(t, (0.2*j/boxB.mass))));
+        boxA.angAccel += lb2d.dotProduct(rAP_perp, lb2d.addVector(lb2d.multVector(normal, j/boxA.inertia), lb2d.multVector(t, 0.2*-j/boxA.inertia)));
+        boxB.angAccel += lb2d.dotProduct(rBP_perp, lb2d.addVector(lb2d.multVector(normal, -j/boxB.inertia), lb2d.multVector(t, 0.2*j/boxB.inertia)));
+    }
+
+}
+
+/**
+ * @param {Shape} a 
+ * @param {Shape} b 
+ */
+function detectCollisionBall(a, b) {
 //Distanz ermitteln
     let radiusTotal = a.radius + b.radius;
     let distance = a.location.dist(b.location);
@@ -251,45 +266,56 @@ function checkCollisionBalls(a, b) {
         a.resetPos(lb2d.multVector(collisionLine, 0.5));
         b.resetPos(lb2d.multVector(collisionLine, -0.5));
         collisionLine.normalize();
-        // resolveCollisionBalls(a, b, collisionLine);
-        const rA = lb2d.multVector(collisionLine, -a.radius);
-        const rA_perp = new lb2d.Vector(-rA.y, rA.x);
-        const rB = lb2d.multVector(collisionLine, b.radius);
-        const rB_perp = new lb2d.Vector(-rB.y, rB.x);
-        const VtanA = lb2d.multVector(rA_perp, a.angVelocity);
-        const VtanB = lb2d.multVector(rB_perp, b.angVelocity);
-        const VgesamtA = lb2d.addVector(a.velocity, VtanA);
-        const VgesamtB = lb2d.addVector(b.velocity, VtanB);
-        const velocity_AB = lb2d.subVector(VgesamtA, VgesamtB);
-    
-        if (lb2d.dotProduct(velocity_AB, collisionLine) < 0) { // wenn negativ, dann auf Kollisionskurs
-            const e = 1; //inelastischer Stoß
-            const j_denominator = lb2d.dotProduct(lb2d.multVector(velocity_AB, -(1+e)), collisionLine);
-            const j_divLinear = lb2d.dotProduct(collisionLine, lb2d.multVector(collisionLine, (1/a.mass + 1/b.mass)));
-            const j = j_denominator / j_divLinear;
-            // Grundlage für Friction berechnen
-            const t = new lb2d.Vector(-(collisionLine.y), collisionLine.x);
-            const t_scalarprodukt = lb2d.dotProduct(velocity_AB, t);
-            t.mult(t_scalarprodukt);
-            t.normalize();
-            //apply Force
-            a.accel.add(lb2d.addVector(lb2d.multVector(collisionLine, (0.8*j/a.mass)), lb2d.multVector(t, (0.2*-j/a.mass))));
-            b.accel.add(lb2d.addVector(lb2d.multVector(collisionLine, (0.8*-j/b.mass)), lb2d.multVector(t, (0.2*j/b.mass))))
-            a.angAccel += lb2d.dotProduct(rA_perp, lb2d.multVector(t, 0.1*-j/a.inertia));
-            b.angAccel += lb2d.dotProduct(rB_perp, lb2d.multVector(t, 0.1*j/b.inertia));
-        }
+        resolveCollisionBall(a, b, collisionLine);
     }
 }
 
-/** @type {(ball: Shape, box: Shape) => void} */
-function checkCollisionBallBoxes(ball, box) {
+/**
+ * @param {Shape} a Ball
+ * @param {Shape} b Ball
+ * @param {lb2d.Vector} normal 
+ */
+function resolveCollisionBall(a, b, normal) {
+    const rA = lb2d.multVector(normal, -a.radius);
+    const rA_perp = new lb2d.Vector(-rA.y, rA.x);
+    const rB = lb2d.multVector(normal, b.radius);
+    const rB_perp = new lb2d.Vector(-rB.y, rB.x);
+    const VtanA = lb2d.multVector(rA_perp, a.angVelocity);
+    const VtanB = lb2d.multVector(rB_perp, b.angVelocity);
+    const VgesamtA = lb2d.addVector(a.velocity, VtanA);
+    const VgesamtB = lb2d.addVector(b.velocity, VtanB);
+    const velocity_AB = lb2d.subVector(VgesamtA, VgesamtB);
+
+    if (lb2d.dotProduct(velocity_AB, normal) < 0) { // wenn negativ, dann auf Kollisionskurs
+        const e = 1; //inelastischer Stoß
+        const j_denominator = lb2d.dotProduct(lb2d.multVector(velocity_AB, -(1+e)), normal);
+        const j_divLinear = lb2d.dotProduct(normal, lb2d.multVector(normal, (1/a.mass + 1/b.mass)));
+        const j = j_denominator / j_divLinear;
+        // Grundlage für Friction berechnen
+        const t = new lb2d.Vector(-(normal.y), normal.x);
+        const t_scalarprodukt = lb2d.dotProduct(velocity_AB, t);
+        t.mult(t_scalarprodukt);
+        t.normalize();
+        //apply Force
+        a.accel.add(lb2d.addVector(lb2d.multVector(normal, (0.8*j/a.mass)), lb2d.multVector(t, (0.2*-j/a.mass))));
+        b.accel.add(lb2d.addVector(lb2d.multVector(normal, (0.8*-j/b.mass)), lb2d.multVector(t, (0.2*j/b.mass))))
+        a.angAccel += lb2d.dotProduct(rA_perp, lb2d.multVector(t, 0.1*-j/a.inertia));
+        b.angAccel += lb2d.dotProduct(rB_perp, lb2d.multVector(t, 0.1*j/b.inertia));
+    }
+}
+
+/**
+ * @param {Shape} ball 
+ * @param {Shape} box 
+ */
+function detectCollisionBallBox(ball, box) {
     for (let j = 0; j < 4; j++) {
         let e = lb2d.subVector(box.vertices[j+1], box.vertices[j]);
         //Vektor von Ecke der Box zum Ball
         let VerticeToBall = lb2d.subVector(ball.location, box.vertices[j]);
         // --------- Einfügung 09.04.2021, um Kollision mit Ecken abzufangen
         if (VerticeToBall.mag() < ball.radius) {
-            resolveCollisionBallBoxes(ball, box, box.vertices[j], VerticeToBall);
+            resolveCollisionBallBox(ball, box, box.vertices[j], VerticeToBall);
             return;
         }
         // --------- Ende Einfügung 09.04.2021
@@ -314,15 +340,20 @@ function checkCollisionBallBoxes(ball, box) {
                 ball.resetPos(mtv);
                 //vor Berechnung muss e_perp normalisiert werden
                 e_perp.normalize();
-                resolveCollisionBallBoxes(ball, box, p, e_perp)
+                resolveCollisionBallBox(ball, box, p, e_perp)
                 return;
             }
         }
     }
 }
 
-/** @type {(ball: Shape, box: Shape, cp: lb2d.Vector, normal:lb2d.Vector) => void} */
-function resolveCollisionBallBoxes(ball, box, cp, normal) {
+/**
+ * @param {Shape} ball 
+ * @param {Shape} box 
+ * @param {lb2d.Vector} cp 
+ * @param {lb2d.Vector} normal 
+ */
+function resolveCollisionBallBox(ball, box, cp, normal) {
     const rA = lb2d.multVector(normal, -ball.radius);
     const rA_perp = new lb2d.Vector(-rA.y, rA.x);
     const rBP = lb2d.subVector(cp, box.location);
@@ -371,17 +402,17 @@ export function checkCollision(shapes) {
     
                 if (shapes[i].typ == "Ball") {
                     if (shapes[j].typ == "Ball") {
-                        checkCollisionBalls(shapes[i], shapes[j]);
+                        detectCollisionBall(shapes[i], shapes[j]);
                     } else {
-                        checkCollisionBallBoxes(shapes[i],shapes[j]);
+                        detectCollisionBallBox(shapes[i],shapes[j]);
                     }
                 }
             
                 if (shapes[i].typ == "Box") {
                     if (shapes[j].typ == "Box") {
-                        checkCollisionBoxes(shapes[i], shapes[j]);
+                        detectCollisionBox(shapes[i], shapes[j]);
                     } else {
-                        checkCollisionBallBoxes(shapes[j], shapes[i]);
+                        detectCollisionBallBox(shapes[j], shapes[i]);
                     }            
                 }
             }
@@ -400,9 +431,9 @@ export function createKicking() {
     
     return function(shapes) {
         if (lb2d.isMouseDown() && index == null) {
-            shapes.forEach((element, idx) => {
-                if (element.location.dist(new lb2d.Vector(lb2d.mouseX, lb2d.mouseY)) < 15) {
-                  base.set(element.location.x, element.location.y);
+            shapes.forEach((shape, idx) => {
+                if (shape.location.dist(new lb2d.Vector(lb2d.mouseX, lb2d.mouseY)) < 15) {
+                  base.set(shape.location.x, shape.location.y);
                   index = idx;
                 }
             })  
@@ -462,16 +493,16 @@ function createShadow(shape) {
  * @param {Shape[]} shapes
  */
  export function applyFriction(shapes) {
-    shapes.forEach(element => {
-        let frictForce = element.velocity.copy();
+    shapes.forEach(shape => {
+        let frictForce = shape.velocity.copy();
         frictForce.normalize();
         frictForce.mult(COEFFICIENT * -1); // in Gegenrichtung
-        frictForce.limit(element.velocity.mag());
+        frictForce.limit(shape.velocity.mag());
 
-        const frictAngDirection = element.angVelocity < 0 ? 1 : -1; // in Gegenrichtung
-        const frictAngForce = lb2d.limitNum(COEFFICIENT * 0.05 * frictAngDirection, Math.abs(element.angVelocity));
+        let frictAngDirection = shape.angVelocity < 0 ? 1 : -1; // in Gegenrichtung
+        let frictAngForce = lb2d.limitNum(COEFFICIENT * 0.05 * frictAngDirection, Math.abs(shape.angVelocity));
 
-        element.applyForce(frictForce, frictAngForce);
+        shape.applyForce(frictForce, frictAngForce);
     });
 }
 
@@ -479,12 +510,38 @@ function createShadow(shape) {
  * @param {Shape[]} shapes
  */
 export function applyGravity(shapes) {
-    shapes.forEach(element => {
-        if (element.mass != Infinity) {
-            element.applyForce(lb2d.multVector(GRAVITY, element.mass), 0);
+    shapes.forEach(shape => {
+        if (shape.mass != Infinity) {
+            shape.applyForce(lb2d.multVector(GRAVITY, shape.mass), 0);
         }
     });
 }
+
+/** 
+ * @param {Shape[]} shapes
+ */
+export function applyDragforce(shapes) {
+    shapes.forEach((shape) => {
+        // Magnitude is coefficient * speed squared
+        let speedSq = shape.velocity.magSq();
+        let dragMagnitude = 0.3 * speedSq;
+
+        // Direction is inverse of velocity
+        let dragForce = shape.velocity.copy();
+        dragForce.mult(-1);
+
+        let dragAngDirection = shape.angVelocity < 0 ? 1 : -1; // in Gegenrichtung
+        let dragAngForce = lb2d.limitNum(0.001 * speedSq * dragAngDirection, Math.abs(shape.angVelocity))
+
+        // Scale according to magnitude
+        // dragForce.setMag(dragMagnitude);
+        dragForce.normalize();
+        dragForce.mult(dragMagnitude);
+        shape.applyForce(dragForce, dragAngForce);
+    })
+    
+}
+
 
 /** 
  * @param {Shape[]} shapes
