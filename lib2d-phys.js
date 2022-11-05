@@ -34,7 +34,6 @@ export class Box {
      * @param {number} h 
      */
     constructor (x, y, w, h) {
-
         this.typ = "Box";
         /** @type {lb2d.Vector[]} */
         this.vertices = new Array(5);
@@ -158,8 +157,8 @@ export class Ball {
 }
 
 /**
- * @param {Shape} a 
- * @param {Shape} b 
+ * @param {Shape} a Box
+ * @param {Shape} b Box
  */
 function detectCollisionBox(a, b) {
     // Geprüft wird, ob eine Ecke von boxA in die Kante von boxB schneidet
@@ -173,37 +172,29 @@ function detectCollisionBox(a, b) {
     // scalar_z Faktor von z für den Schnittpunkt z/e
     // mtv = minimal translation vector (überlappender Teil von d zur Kante e)
 
-    let boxA = a;
-    let boxB = b;
-    for (let n = 0; n < 2; n++) {
-        if (n == 1) {
-            boxA = b;
-            boxB = a;
-        }
-        for (let i = 0; i < 4; i++) {            
-            for (let j = 0; j < 4; j++) {
-                // Prüfung auf intersection von Diagonale d zu Kante e
-                let [, scalar_d] = lb2d.intersect(boxA.location, boxA.vertices[i], boxB.vertices[j], boxB.vertices[j + 1])
-                if (scalar_d) {
-                    // Prüfung auf intersection Linie z zu Kante e
-                    let [, scalar_z] = lb2d.intersect(boxA.location, boxB.location, boxB.vertices[j], boxB.vertices[j + 1])
-                    if (scalar_z) {
-                        // Collision findet statt
-                        // Objekte zurücksetzen und normal_e berechnen. Kollisionspunkz ist Ecke i von BoxA
-                        let e = lb2d.subVector(boxB.vertices[j + 1], boxB.vertices[j]);
-                        let e_perp = new lb2d.Vector(-(e.y), e.x);   
-                        let d = lb2d.subVector(boxA.vertices[i], boxA.location);
-                        d.mult(1 - scalar_d);
-                        e_perp.normalize(); 
-                        let distance = lb2d.dotProduct(e_perp, d);
-                        e_perp.mult(-distance); // mtv 
-                        boxA.resetPos(lb2d.multVector(e_perp, 0.5));
-                        boxB.resetPos(lb2d.multVector(e_perp, -0.5));
-                        e_perp.normalize(); // normal_e
-                        //Collision berechnen
-                        resolveCollisionBox(boxA, boxB, boxA.vertices[i], e_perp);
-                        return; 
-                    }
+    for (let i = 0; i < 4; i++) {            
+        for (let j = 0; j < 4; j++) {
+            // Prüfung auf intersection von Diagonale d zu Kante e
+            let [, scalar_d] = lb2d.intersect(a.location, a.vertices[i], b.vertices[j], b.vertices[j + 1])
+            if (scalar_d) {
+                // Prüfung auf intersection Linie z zu Kante e
+                let [, scalar_z] = lb2d.intersect(a.location, b.location, b.vertices[j], b.vertices[j + 1])
+                if (scalar_z) {
+                    // Collision findet statt
+                    // Objekte zurücksetzen und normal_e berechnen. Kollisionspunkz ist Ecke i von BoxA
+                    let e = lb2d.subVector(b.vertices[j + 1], b.vertices[j]);
+                    let e_perp = new lb2d.Vector(-(e.y), e.x);   
+                    let d = lb2d.subVector(a.vertices[i], a.location);
+                    d.mult(1 - scalar_d);
+                    e_perp.normalize(); 
+                    let distance = lb2d.dotProduct(e_perp, d);
+                    e_perp.mult(-distance); // mtv 
+                    a.resetPos(lb2d.multVector(e_perp, 0.5));
+                    b.resetPos(lb2d.multVector(e_perp, -0.5));
+                    e_perp.normalize(); // normal_e
+                    //Collision berechnen
+                    resolveCollisionBox(a, b, a.vertices[i], e_perp);
+                    return; 
                 }
             }
         }
@@ -410,7 +401,10 @@ export function checkCollision(shapes) {
             
                 if (shapes[i].typ == "Box") {
                     if (shapes[j].typ == "Box") {
+                        // beide Boxen müssen geprüft werden, ob sie auf
+                        // die jeweils andere trifft
                         detectCollisionBox(shapes[i], shapes[j]);
+                        detectCollisionBox(shapes[j], shapes[i]);
                     } else {
                         detectCollisionBallBox(shapes[j], shapes[i]);
                     }            
