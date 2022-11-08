@@ -159,6 +159,7 @@ export class Ball {
 /**
  * @param {Shape} a Box
  * @param {Shape} b Box
+ * @returns {[lb2d.Vector, lb2d.Vector]} cp, normal
  */
 function detectCollisionBox(a, b) {
     // Geprüft wird, ob eine Ecke von boxA in die Kante von boxB schneidet
@@ -192,13 +193,12 @@ function detectCollisionBox(a, b) {
                     a.resetPos(lb2d.multVector(e_perp, 0.5));
                     b.resetPos(lb2d.multVector(e_perp, -0.5));
                     e_perp.normalize(); // normal_e
-                    //Collision berechnen
-                    resolveCollisionBox(a, b, a.vertices[i], e_perp);
-                    return; 
+                    return [a.vertices[i], e_perp]
                 }
             }
         }
     }
+    return [null, null];
 }
 
 /**
@@ -243,12 +243,12 @@ function resolveCollisionBox(boxA, boxB, cp, normal) {
 /**
  * @param {Shape} a 
  * @param {Shape} b 
+ * @returns {lb2d.Vector} normal
  */
 function detectCollisionBall(a, b) {
-//Distanz ermitteln
+    //Distanz ermitteln
     let radiusTotal = a.radius + b.radius;
     let distance = a.location.dist(b.location);
-
     if (distance < radiusTotal) {
         //Treffer
         let space = (radiusTotal - distance);
@@ -257,8 +257,9 @@ function detectCollisionBall(a, b) {
         a.resetPos(lb2d.multVector(collisionLine, 0.5));
         b.resetPos(lb2d.multVector(collisionLine, -0.5));
         collisionLine.normalize();
-        resolveCollisionBall(a, b, collisionLine);
+        return collisionLine;
     }
+    return null;
 }
 
 /**
@@ -298,6 +299,7 @@ function resolveCollisionBall(a, b, normal) {
 /**
  * @param {Shape} ball 
  * @param {Shape} box 
+ * @returns {[lb2d.Vector, lb2d.Vector]} cp, normal
  */
 function detectCollisionBallBox(ball, box) {
     for (let j = 0; j < 4; j++) {
@@ -306,8 +308,7 @@ function detectCollisionBallBox(ball, box) {
         let VerticeToBall = lb2d.subVector(ball.location, box.vertices[j]);
         // --------- Einfügung 09.04.2021, um Kollision mit Ecken abzufangen
         if (VerticeToBall.mag() < ball.radius) {
-            resolveCollisionBallBox(ball, box, box.vertices[j], VerticeToBall);
-            return;
+            return [box.vertices[j], VerticeToBall];
         }
         // --------- Ende Einfügung 09.04.2021
         let mag_e = e.mag();
@@ -331,11 +332,12 @@ function detectCollisionBallBox(ball, box) {
                 ball.resetPos(mtv);
                 //vor Berechnung muss e_perp normalisiert werden
                 e_perp.normalize();
-                resolveCollisionBallBox(ball, box, p, e_perp)
-                return;
+                //resolveCollisionBallBox(ball, box, p, e_perp)
+                return [p, e_perp]
             }
         }
     }
+    return [null, null];
 }
 
 /**
@@ -388,25 +390,41 @@ export function checkCollision(shapes) {
             if (shadow_i.maxX >= shadow_j.minX && shadow_i.minX <= shadow_j.maxX && shadow_i.maxY >= shadow_j.minY && shadow_i.minY <= shadow_j.maxY) {  
                 //dann Überschneidung
                 // Testcode
-                lb2d.line(shapes[i].location.x, shapes[i].location.y, shapes[j].location.x, shapes[j].location.y)
+                //lb2d.line(shapes[i].location.x, shapes[i].location.y, shapes[j].location.x, shapes[j].location.y)
                 // Ende Testcode
     
                 if (shapes[i].typ == "Ball") {
                     if (shapes[j].typ == "Ball") {
-                        detectCollisionBall(shapes[i], shapes[j]);
+                        let normal = detectCollisionBall(shapes[i], shapes[j]);
+                        if (normal) {
+                            resolveCollisionBall(shapes[i], shapes[j], normal);
+                        }
                     } else {
-                        detectCollisionBallBox(shapes[i],shapes[j]);
+                        let [cp, normal] = detectCollisionBallBox(shapes[i],shapes[j]);
+                        if (cp) {
+                            resolveCollisionBallBox(shapes[i],shapes[j], cp, normal);
+                        }
                     }
                 }
             
                 if (shapes[i].typ == "Box") {
                     if (shapes[j].typ == "Box") {
                         // beide Boxen müssen geprüft werden, ob sie auf
-                        // die jeweils andere trifft
-                        detectCollisionBox(shapes[i], shapes[j]);
-                        detectCollisionBox(shapes[j], shapes[i]);
+                        // die jeweils andere trefen könnte
+                        let [cp, normal] = detectCollisionBox(shapes[i], shapes[j]);
+                        if (cp) {
+                            resolveCollisionBox(shapes[i], shapes[j], cp, normal);  
+                        } else {
+                            let [cp, normal] = detectCollisionBox(shapes[j], shapes[i]);    
+                            if (cp) {
+                                resolveCollisionBox(shapes[j], shapes[i], cp, normal);
+                            }
+                        }
                     } else {
-                        detectCollisionBallBox(shapes[j], shapes[i]);
+                        let [cp, normal] = detectCollisionBallBox(shapes[j], shapes[i]);
+                        if (cp) {
+                            resolveCollisionBallBox(shapes[j], shapes[i], cp, normal);
+                        }
                     }            
                 }
             }
