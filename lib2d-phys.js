@@ -156,6 +156,29 @@ export class Ball {
     }
 }
 
+export class Wall extends Box{
+    /**
+     * 
+     * @param {number} x 
+     * @param {number} y 
+     * @param {number} w 
+     * @param {number} h 
+     */
+    constructor(x,y,w,h) {
+      super (x,y,w,h)
+      this.mass = Infinity;
+      this.inertia = Infinity;
+      this.typ = "Wall";
+    }
+  
+    display() {
+        lb2d.push();
+        lb2d.strokeColor(255);
+        super.display();
+        lb2d.pop();
+    }
+}
+
 /**
  * @param {Shape} a Box
  * @param {Shape} b Box
@@ -433,6 +456,41 @@ export function checkCollision(shapes) {
     }
 }
 
+/**
+ * @param {Shape[]} shapes 
+ * @param {Shape[]} walls 
+ */
+export function checkWalls(shapes, walls) {
+    for (let i = 0; i < shapes.length; i++) {    
+        for (let j = 0; j < walls.length; j++ ) {
+            //Shadow berechnen von Element i und Element j 
+            let shadow_i = createShadow(shapes[i]);
+            let shadow_j = createShadow(walls[j]);
+            //Überschneidung prüfen
+            if (shadow_i.maxX >= shadow_j.minX && shadow_i.minX <= shadow_j.maxX && shadow_i.maxY >= shadow_j.minY && shadow_i.minY <= shadow_j.maxY) {  
+                //dann Überschneidung
+                // Testcode
+                //lb2d.line(shapes[i].location.x, shapes[i].location.y, shapes[j].location.x, shapes[j].location.y)
+                // Ende Testcode
+    
+                if (shapes[i].typ == "Ball") {
+                    let [cp, normal] = detectCollisionBallBox(shapes[i],walls[j]);
+                    if (cp) {
+                        resolveCollisionBallBox(shapes[i],walls[j], cp, normal);
+                    }
+                }
+            
+                if (shapes[i].typ == "Box") {
+                    let [cp, normal] = detectCollisionBox(shapes[i], walls[j]);
+                    if (cp) {
+                        resolveCollisionBox(shapes[i], walls[j], cp, normal);  
+                    }            
+                }
+            }
+        }
+    }
+}
+
 /** 
  * @returns {(shapes: Shape[]) => void} function for checkKicking elements
 */
@@ -560,7 +618,9 @@ export function applyDragforce(shapes) {
  */
 export function update(shapes) {
     shapes.forEach(element => {
-        element.update();
+        if (element.typ != "Wall") {
+            element.update();
+        }
         element.display();
     });
 }
