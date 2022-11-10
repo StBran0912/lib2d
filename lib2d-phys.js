@@ -484,7 +484,12 @@ export function checkWalls(shapes, walls) {
                     let [cp, normal] = detectCollisionBox(shapes[i], walls[j]);
                     if (cp) {
                         resolveCollisionBox(shapes[i], walls[j], cp, normal);  
-                    }            
+                    } else {
+                        let [cp, normal] = detectCollisionBox(walls[j], shapes[i]);   
+                        if (cp) {
+                            resolveCollisionBox(shapes[i], walls[j], cp, normal); 
+                        }     
+                    }          
                 }
             }
         }
