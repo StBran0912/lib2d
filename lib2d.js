@@ -640,7 +640,7 @@ export class Vector {
     return vdist.mag();
   }
 
-  /** @type {(v: Vector) => void} */
+  /** @type {() => void} */
   normalize() {
     const len = this.mag();
     if (len != 0) {
